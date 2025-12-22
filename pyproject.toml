@@ -1,0 +1,13 @@
+[project]
+name = "agentic-guardrails"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "langgraph==0.1.18",
+    "google-genai",
+    "pandas==2.2.2",
+    "edgartools",
+    "ollama",
+    "python-dotenv",
+    "pygraphviz==1.13",
+]
