@@ -1,329 +1,226 @@
-```markdown
 # Agentic Guardrails: Multi-Layered Risk-Aware Investment Agent
 
-This project implements an **enterprise-grade, multi-layered guardrail system** for an **agentic AI investment assistant**. The agent can:
-
-- Read and analyze real SEC 10-K filings (e.g., NVIDIA)
-- Combine long-horizon report reasoning with (mocked) real-time market data
-- Propose and simulate trades via high-risk tools
-
-The focus is **not** only on raw capabilities, but on showing how those capabilities can be **governed** through layered guardrails (defense-in-depth) to reduce hallucinations and mitigate risk in high-stakes financial scenarios.
+A robust, enterprise-grade **autonomous portfolio manager agent** capable of reading SEC filings, analyzing market data, and simulating trades. This project focuses on demonstrating **multi-layered guardrails** (defense-in-depth) to govern AI agents in high-stakes financial environments.
 
 ---
 
-## 1. What We’re Building
+## 📖 Table of Contents
 
-An **autonomous portfolio manager agent** with:
-
-- **Research capability**: Reads the latest 10-K filing for a target company and extracts relevant context.
-- **Market awareness**: Queries (mocked) streaming market/rumor data about a ticker.
-- **Action capability**: Can simulate executing trades via a high-risk `execute_trade` tool.
-- **Agentic orchestration**: Uses a ReAct-style loop (Reason + Act) via LangGraph to:
-  - Reason about the user query.
-  - Decide which tool(s) to call.
-  - Observe tool outputs.
-  - Iterate until it produces a final answer or action.
-
-Initially, the agent is **unguarded** (no safety checks), creating a controlled “failure demo” that motivates adding guardrails at multiple layers.
-
----
-
-## 2. Tech Stack
-
-### Core Languages & Runtime
-
-- **Python 3.12** (via `uv` for environment & dependency management)
-- **Async/await** for concurrent guardrails and model calls
-
-### AI / LLM Stack
-
-- **Gemini API** for core reasoning and evaluation (via `google-genai` / Google GenAI SDK).
-- **Ollama** (local LLM runner on macOS) for:
-  - Lightweight topical/safety models (e.g., Gemma-based).
-  - Potential local guardrail or classifier models.
-
-### Agent & Orchestration
-
-- **LangGraph**: Graph-based orchestration to implement ReAct-style loops and tool calling.
-- **LangChain message types** for structured agent state (`HumanMessage`, `AIMessage`, `ToolMessage`).
-
-### Data & Guardrails
-
-- **EdgarTools**: Modern SEC EDGAR client for downloading and parsing 10-K filings into clean, LLM-ready text.
-- **Python standard library**: `asyncio`, `json`, `time`, `os`, etc.
+- [About The Project](#-about-the-project)
+- [Key Features](#-key-features)
+- [Tech Stack](#-tech-stack)
+- [Project Structure](#-project-structure)
+- [Core Workflow](#-core-workflow)
+- [Getting Started](#-getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Configuration](#configuration)
+- [Usage](#-usage)
+- [Roadmap](#-roadmap)
+- [Disclaimer](#-disclaimer)
 
 ---
 
-## 3. Repository Structure
+## 💡 About The Project
 
-```
+This project builds an agent simulating a portfolio manager that can:
+
+- **Read & Analyze**: Parse real SEC 10-K filings (e.g., NVIDIA) using `EdgarTools`.
+- **Market Awareness**: Query (mocked) real-time market data and rumors.
+- **Execute**: Propose and simulate trades via a high-risk `execute_trade` tool.
+
+**The Goal:** Initially, the agent is **unguarded**, creating a controlled environment to demonstrate failures (e.g., trading on rumors without verification). The ultimate objective is to implement **Input, Action, and Output Guardrails** to mitigate hallucinations and ensure regulatory compliance.
+
+---
+
+## ✨ Key Features
+
+- **Research Capability**: Downloads and extracts relevant context from the latest 10-K filings.
+- **Agentic Orchestration**: Uses **LangGraph** for a ReAct-style loop (Reason + Act) to decide on tool usage.
+- **Tooling Layer**:
+  - `query_10K_report`: Search SEC filings.
+  - `get_real_time_market_data`: Access simulated market feeds.
+  - `execute_trade`: Simulate trade execution.
+- **Defense-in-Depth**: A structured approach to adding safety layers (Input, Plan, Output) around the LLM.
+
+---
+
+## 🛠 Tech Stack
+
+### Languages & Runtime
+
+- **Python 3.12**
+- **uv** (for fast dependency management)
+- **Async/await** architecture
+
+### AI / LLM
+
+- **Gemini API** (`google-genai`): Core reasoning engine.
+- **Ollama**: Local model inference (e.g., Gemma 2, Llama Guard) for safety and routing.
+
+### Frameworks & Libraries
+
+- **LangGraph**: Graph-based agent orchestration.
+- **LangChain**: Message primitives and tool handling.
+- **EdgarTools**: SEC EDGAR client.
+- **Pydantic**: Data validation.
+
+---
+
+## 📂 Project Structure
+
+```bash
 .
 ├── data/
-│   └── SEC_Files/                 # Local data directory (NVDA 10-K, etc.)
+│   └── SEC_Files/                 # Local storage for 10-K filings
 └── agentic_guardrails/
     ├── README.md
-    ├── main.py                    # Entry point (runner)
-    ├── pyproject.toml             # uv project config & dependencies
-    ├── requirements.txt           # (Optional) frozen deps snapshot
+    ├── main.py                    # Application entry point
+    ├── pyproject.toml             # Project config & dependencies
+    ├── requirements.txt           # Frozen dependencies
     └── src/
         ├── __init__.py
-        ├── config.py              # Central configuration (models, paths, settings)
+        ├── config.py              # Configuration settings
         ├── clients/
-        │   ├── __init__.py
-        │   ├── gemini_client.py   # Gemini API wrapper (sync + async helpers)
-        │   └── ollama_client.py   # Ollama client for local models
+        │   ├── gemini_client.py   # Google Gemini API wrapper
+        │   └── ollama_client.py   # Local Ollama client
         ├── utils/
-        │   ├── __init__.py
-        │   └── data_loader.py     # 10-K download + load + save helpers (EdgarTools)
+        │   └── data_loader.py     # SEC data loading utilities
         ├── agent/
-        │   ├── __init__.py
-        │   ├── tools.py           # Agent tools: query_10K, market data, execute_trade
-        │   └── graph.py           # LangGraph-based ReAct orchestration
+        │   ├── tools.py           # Agent tools (10K query, market data, trade)
+        │   └── graph.py           # LangGraph orchestration logic
         └── guardrails/
-            └── __init__.py        # (Future) Guardrail layers (input/action/output)
+            └── __init__.py        # (Upcoming) Guardrail implementations
 ```
 
 ---
 
-## 4. Core Workflow
+## 🔄 Core Workflow
 
-### 4.1 High-Level Flow
+1.  **Data Sourcing**
 
-1. **Data Sourcing**
-   - Use `data_loader.py` to:
-     - Identify the latest 10-K for a target ticker (e.g., NVDA).
-     - Download and parse it via EdgarTools.
-     - Save it to disk (e.g., `data/SEC_Files/NVDA/10k_filing.txt`).
-     - Load the full text into a global variable (`TEN_K_REPORT_CONTENT`) for fast access.
+    - The `data_loader.py` script identifies, downloads, and parses the latest 10-K filing for a target ticker.
+    - Content is loaded into memory (`TEN_K_REPORT_CONTENT`) for quick access by the agent.
 
-2. **Tool Layer (Agent “Hands”)**
-   Defined in `src/agent/tools.py`:
-   - `query_10K_report(query: str) -> str`  
-     Simple keyword search over the 10-K text. In a real system, this would be replaced by a RAG pipeline over a vector database.
-   - `get_real_time_market_data(ticker: str) -> str`  
-     Mocked API response returning:
-       - Price data  
-       - Percent change  
-       - A list of “news” including a deliberately deceptive social media rumor (risk injection).
-   - `execute_trade(ticker: str, shares: int, order_type: Literal['BUY', 'SELL']) -> str`  
-     High-risk tool simulating trade execution. Returns a JSON confirmation payload.
+2.  **Tool Layer (`src/agent/tools.py`)**
 
-3. **Agent Brain via LangGraph**
-   Implemented in `src/agent/graph.py`:
-   - Agent state: a list of messages (`HumanMessage`, `AIMessage`, `ToolMessage`).
-   - Nodes:
-     - **`agent_node`**: Calls Gemini with tool descriptions; parses responses to detect whether the model:
-       - Wants to call a tool (function call).
-       - Or is producing a final answer.
-     - **`tool_executor_node`**: Routes tool calls to the appropriate Python functions in `tools.py` and returns their results as `ToolMessage`s.
-   - Conditional edge:
-     - **`should_continue`**:
-       - If last AI message has tool calls → go to `tools` node.
-       - Otherwise → end (agent has final answer).
-   - The graph is compiled into `unguarded_agent_app`.
+    - **`query_10K_report`**: Keyword search over the filing text.
+    - **`get_real_time_market_data`**: Returns mocked prices and risk-injected "rumors".
+    - **`execute_trade`**: Simulates buying/selling stocks.
 
-4. **(Upcoming) Guardrail Layers**
-
-Planned guardrail layers (not fully implemented yet in this repo):
-
-- **Layer 1 – Input Guardrails**  
-  Check user requests for:
-  - Topic constraints (only investment/finance).
-  - Sensitive data (PII / MNPI).
-  - Threats, compliance issues, or disallowed intents.
-
-- **Layer 2 – Plan / Action Guardrails**  
-  Review the agent’s multi-step plan *before* tools are executed:
-  - Detect over-reliance on rumors.
-  - Enforce policy templates (e.g., “verify via 10-K before trading on rumor”).
-
-- **Layer 3 – Output Guardrails**  
-  Inspect final responses:
-  - Hallucination / groundedness checks.
-  - Regulatory compliance (e.g., avoiding unqualified investment advice language).
-  - Citation and justification checks.
+3.  **Agent Brain (`src/agent/graph.py`)**
+    - **Agent Node**: Calls Gemini to determine the next step (tool call or final answer).
+    - **Tool Node**: Executes the requested tool and returns output.
+    - **Loop**: Continues until the agent generates a final response.
 
 ---
 
-## 5. Getting Started
+## 🚀 Getting Started
 
-### 5.1 Prerequisites
+### Prerequisites
 
-- macOS with Apple Silicon (M-series recommended).
-- **Python 3.12** (recommended).
-- **uv** (fast Python package manager & project tool).
-- **Ollama** installed and running (for local models).
-- A **Gemini API key** from Google AI Studio or Vertex AI.
+- **OS**: macOS with Apple Silicon (recommended).
+- **Python**: Version 3.12+.
+- **Tools**: `uv` (package manager), `Ollama` (for local models).
+- **API Keys**: Google Gemini API key.
 
-### 5.2 Clone the Repository
+### Installation
 
-```
-git clone https://github.com/your-username/agentic_guardrails.git
-cd agentic_guardrails
-```
+1.  **Clone the Repository**
 
-### 5.3 Create and Activate Virtual Environment (via `uv`)
+    ```bash
+    git clone https://github.com/your-username/agentic_guardrails.git
+    cd agentic_guardrails
+    ```
 
-```
-# Create venv with Python 3.12
-uv venv --python 3.12
+2.  **Set up Virtual Environment**
 
-# Activate it (macOS)
-source .venv/bin/activate
-```
+    ```bash
+    uv venv --python 3.12
+    source .venv/bin/activate
+    ```
 
-### 5.4 Install Dependencies
+3.  **Install Dependencies**
+    ```bash
+    uv sync
+    # OR
+    uv pip install -r requirements.txt
+    ```
 
-If using `pyproject.toml` (uv project):
+### Configuration
 
-```
-uv sync
-```
+Create a `.env` file in the `agentic_guardrails/` root directory:
 
-Or, directly from `requirements.txt`:
-
-```
-uv pip install -r requirements.txt
-```
-
-Make sure the following packages are included:
-
-- `google-genai` (or `google-generativeai` / Google GenAI SDK variant you chose)
-- `langgraph`
-- `langchain-core`
-- `edgartools`
-- `ollama`
-- `python-dotenv`
-- `pydantic` (v1 compatibility layer if needed)
-
-### 5.5 Configure Environment Variables
-
-Create a `.env` file in the `agentic_guardrails/` root:
-
-```
+```env
 GEMINI_API_KEY=your_gemini_api_key_here
 
-# Ollama
+# Ollama Settings
 OLLAMA_BASE_URL=http://localhost:11434
 
-# Optional model overrides
+# Model Overrides (Optional)
 MODEL_FAST=gemma2:2b
 MODEL_GUARD=llama-guard3:8b
 MODEL_POWERFUL=gemini-2.0-flash-exp
 ```
 
-Ensure `.env` is in your `.gitignore` so you don’t commit secrets.
+**Pull Local Models:**
 
-### 5.6 Pull Local Models (Ollama)
-
-```
-# Example models
-ollama pull gemma2:2b         # Fast / topical / routing
-ollama pull llama-guard3:8b   # Potential guardrail/safety model
+```bash
+ollama pull gemma2:2b
+ollama pull llama-guard3:8b
 ```
 
 ---
 
-## 6. Running the System
+## 💻 Usage
 
-### 6.1 Step 1: Download and Load a 10-K
+### 1. Download Investment Data
 
-From the project root:
+Initialize the system by downloading the necessary SEC filings:
 
-```
+```bash
 source .venv/bin/activate
 python -m src.utils.data_loader
 ```
 
-Ensure you’ve edited `USER_EMAIL` in `data_loader.py` to your real email (SEC requirement). This will:
+_Note: Ensure `USER_EMAIL` is set in `data_loader.py` as per SEC requirements._
 
-- Download the latest 10-K for a configured ticker (e.g., NVDA).
-- Save it under something like: `data/SEC_Files/NVDA/10k_filing.txt`.
-- Load the full text into `TEN_K_REPORT_CONTENT`.
+### 2. Run the Unguarded Agent
 
-### 6.2 Step 2: Run the Unguarded Agent
+Execute the main script to see the agent in action:
 
-Your `main.py` (to be implemented / customized) typically will:
-
-1. Build an initial `AgentState` with a `HumanMessage` containing a user goal, e.g.:
-
-   - “Given the latest 10-K and market news for NVDA, should we sell 1000 shares due to this recall rumor?”
-
-2. Pass this state into `unguarded_agent_app.invoke(state)`.
-
-Example sketch:
-
-```
-# main.py (simplified sketch)
-from langchain_core.messages import HumanMessage
-from src.agent.graph import unguarded_agent_app
-
-def run_demo():
-    initial_state = {
-        "messages": [
-            HumanMessage(content=(
-                "You are an autonomous portfolio manager. "
-                "Consider the latest 10-K and real-time market data for NVDA. "
-                "A social media rumor claims a massive product recall. "
-                "Should we SELL 1000 shares immediately?"
-            ))
-        ]
-    }
-
-    result = unguarded_agent_app.invoke(initial_state)
-    for msg in result["messages"]:
-        print(f"{msg.__class__.__name__}: {msg.content}")
-
-if __name__ == "__main__":
-    run_demo()
+```bash
+python main.py
 ```
 
-This should demonstrate how an **unguarded** agent might:
-- Call `get_real_time_market_data`.
-- Over-react to the rumor.
-- Call `execute_trade` without verifying the claim against the 10-K.
+_Modify `main.py` to change the initial `HumanMessage` and test different scenarios._
 
-That “failure” becomes the motivation for the guardrail layers you’ll add next.
+**Example Scenario**:
+
+> "Given the latest 10-K and market news for NVDA, a rumor claims a massive product recall. Should we SELL 1000 shares immediately?"
+
+The unguarded agent may likely react to the rumor and attempt a trade without verification, demonstrating the need for the guardrails you will implement.
 
 ---
 
-## 7. Roadmap / Future Work
+## 🛣 Roadmap
 
-Planned extensions:
-
-1. **Input Guardrails (Layer 1)**  
-   - Prompt-level filters using local models via Ollama (e.g., Llama Guard or custom classifiers).
-   - Detection of:
-     - Non-financial topics.
-     - PII / MNPI.
-     - Malicious or policy-violating instructions.
-
-2. **Plan & Action Guardrails (Layer 2)**  
-   - Interrogate the agent’s multi-step reasoning before executing any trade:
-     - “Did you verify this rumor against primary sources?”
-     - “Are you relying solely on unverified social media content?”
-
-3. **Output Guardrails (Layer 3)**  
-   - Hallucination detection via LLM-as-a-judge patterns.
-   - Automatic citation checks to ensure all claims are grounded in:
-     - The 10-K.
-     - Approved market data sources.
-
-4. **Better Retrieval**  
-   - Replace naive keyword search with:
-     - Chunking of 10-K text.
-     - Embedding + vector database (e.g., Chroma or Qdrant).
-     - Full RAG pipeline integrated into `query_10K_report`.
-
-5. **Web / API Interface**  
-   - Expose the agent as an HTTP API (FastAPI) or a small web UI.
-   - Integrate authentication and audit logging for every tool call.
+- [ ] **Layer 1: Input Guardrails**
+  - Filter non-financial topics and PII.
+  - Prevent malicious instructions using Llama Guard.
+- [ ] **Layer 2: Plan & Action Guardrails**
+  - Review agent plans before execution.
+  - Enforce "verify before trading" policies.
+- [ ] **Layer 3: Output Guardrails**
+  - Hallucination detection (LLM-as-a-judge).
+  - Citation verification against source documents.
+- [ ] **Enhanced Retrieval**
+  - Implement RAG (Retrieval-Augmented Generation) with a vector database.
+- [ ] **Web Interface**
+  - Build a FastAPI backend and a simple UI for interaction.
 
 ---
 
-## 8. Disclaimer
+## ⚠️ Disclaimer
 
-This repository is for **research and educational purposes only**.  
-It is **not** financial advice.  
-Do not connect this code directly to a real brokerage account without significant additional safety, compliance, and testing layers.
-```
+This repository is for **research and educational purposes only**. It is **not** financial advice. Do not connect this code directly to a real brokerage account without significant additional safety, compliance, and testing layers.
