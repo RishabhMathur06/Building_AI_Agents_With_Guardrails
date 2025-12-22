@@ -3,7 +3,7 @@
 
 This project implements an **enterprise-grade, multi-layered guardrail system** for an **agentic AI investment assistant**. The agent can:
 
-- Read and analyze real SEC 10-K filings (e.g., NVIDIA [finance:NVIDIA Corporation])
+- Read and analyze real SEC 10-K filings (e.g., NVIDIA)
 - Combine long-horizon report reasoning with (mocked) real-time market data
 - Propose and simulate trades via high-risk tools
 
@@ -58,13 +58,13 @@ Initially, the agent is **unguarded** (no safety checks), creating a controlled 
 
 ```
 .
-├── SEC_Files/                     # (Optional) Raw 10-K text files (NVDA, etc.)
+├── data/
+│   └── SEC_Files/                 # Local data directory (NVDA 10-K, etc.)
 └── agentic_guardrails/
     ├── README.md
     ├── main.py                    # Entry point (runner)
     ├── pyproject.toml             # uv project config & dependencies
     ├── requirements.txt           # (Optional) frozen deps snapshot
-    ├── data/                      # Local data directory (can host SEC_Files/)
     └── src/
         ├── __init__.py
         ├── config.py              # Central configuration (models, paths, settings)
