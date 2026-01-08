@@ -4,6 +4,7 @@ Handles communication with Google's Gemini models for complex tasks
 """
 
 # Importing dependencies.
+import numbers
 from google import genai
 from google.genai import types
 from typing import List, Optional, Any, Dict
