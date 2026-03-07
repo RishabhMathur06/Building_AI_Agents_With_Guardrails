@@ -21,6 +21,7 @@ jsonpatch==1.33
 jsonpointer==3.0.0
 langchain-core==0.2.43
 langgraph==0.1.18
+langgraph-checkpoint==4.0.1
 langsmith==0.1.147
 lxml==6.0.2
 markdown-it-py==4.0.0
