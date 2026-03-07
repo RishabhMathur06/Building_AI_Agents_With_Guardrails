@@ -98,12 +98,10 @@ This project builds an agent simulating a portfolio manager that can:
 ## 🔄 Core Workflow
 
 1.  **Data Sourcing**
-
     - The `data_loader.py` script identifies, downloads, and parses the latest 10-K filing for a target ticker.
     - Content is loaded into memory (`TEN_K_REPORT_CONTENT`) for quick access by the agent.
 
 2.  **Tool Layer (`src/agent/tools.py`)**
-
     - **`query_10K_report`**: Keyword search over the filing text.
     - **`get_real_time_market_data`**: Returns mocked prices and risk-injected "rumors".
     - **`execute_trade`**: Simulates buying/selling stocks.
@@ -141,7 +139,16 @@ This project builds an agent simulating a portfolio manager that can:
     ```
 
 3.  **Install Dependencies**
+
+    _Note for macOS users: `pygraphviz` require C-headers from the `graphviz` system package to build. Install `graphviz` first via Homebrew, then link the headers during `uv` installation:_
+
     ```bash
+    brew install graphviz
+    export CFLAGS="-I$(brew --prefix graphviz)/include"
+    export LDFLAGS="-L$(brew --prefix graphviz)/lib"
+    uv pip install pygraphviz
+
+    # Then install the rest of the dependencies
     uv sync
     # OR
     uv pip install -r requirements.txt
