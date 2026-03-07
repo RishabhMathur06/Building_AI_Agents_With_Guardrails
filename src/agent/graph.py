@@ -73,11 +73,12 @@ def call_gemini_with_tools(messages: List[BaseMessage]):
     prompt_text = last_msg.content if hasattr(last_msg, 'content') else str(last_msg)
 
     # Calling Gemini.
+    from google.genai import types
     # Note: We need to access the underlying genai "client" object for advanced tool use.
     response = gemini_client.client.models.generate_content(
         model=Config.MODEL_POWERFUL,
         contents=prompt_text,
-        tools=tools_config
+        config=types.GenerateContentConfig(tools=tools_config)
     )
 
     return response
@@ -102,13 +103,15 @@ def agent_node(state: AgentState):
     try:
         candidates = response.candidates[0]
 
+        import uuid
         for part in candidates.content.parts:
             if part.function_call:
                 # It's a tool call.
                 fc = part.function_call
                 tool_calls.append({
                     "name": fc.name,
-                    "args": dict(fc.args)
+                    "args": dict(fc.args),
+                    "id": f"call_{uuid.uuid4().hex[:8]}"
                 })
                 print(f"--- DECISION: Agent wants to call tool: {fc.name}")
 
@@ -162,7 +165,7 @@ def tool_executor_node(state: AgentState):
         ))
 
 # --- Defining Conditional Logic ---
-def should_continue(state: AgentState) -> Literal("tools", "__end__"):
+def should_continue(state: AgentState) -> Literal["tools", "__end__"]:
     """
     Decides the path:
     - If LLM made tool calls -> Go to 'tools' node
