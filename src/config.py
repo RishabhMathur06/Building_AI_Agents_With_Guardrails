@@ -37,7 +37,7 @@ class Config:
     ##  - Reasoning
     ##  - Hallucination Detection
     ##  - Evaluation
-    MODEL_POWERFUL : str = os.getenv("MODEL_POWERFUL", "gemini-2.5-flash")
+    MODEL_POWERFUL : str = os.getenv("MODEL_POWERFUL", "gemini-3-flash-preview")
 
     # ----Data Configuration----
     DATA_DIR : Path = Path("data")
