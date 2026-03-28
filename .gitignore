@@ -14,3 +14,6 @@ wheels/
 
 # Git-related files
 .git
+
+# uv related files
+uv.lock

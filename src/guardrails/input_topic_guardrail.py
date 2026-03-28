@@ -28,7 +28,7 @@ async def check_topic(prompt: str) -> Dict[str, Any]:
     Returns:
         Dict[str, Any]: {"topic": "<CATEGORY>"}
     """
-    print("--- Guardrail (Input): Checking prompt topic ---")
+    print("--- Guardrail (Input/Topic): Checking prompt topic ---")
 
     system_prompt = """
     You're a topic classifier.
@@ -57,12 +57,12 @@ async def check_topic(prompt: str) -> Dict[str, Any]:
         latency = time.time() - start_time
 
         print(
-            f"--- Guardrail (Input): Topic is: '{result.get('topic', 'UNKNOWN')}'. Latency: {latency:.2f}s ---"
+            f"--- Guardrail (Input/Topic): Topic is: '{result.get('topic', 'UNKNOWN')}'. Latency: {latency:.2f}s ---"
         )
 
         return result
 
     except Exception as e:
-        print(f"--- Guardrail (Input): ERROR - {e} ---")
+        print(f"--- Guardrail (Input/Topic): ERROR - {e} ---")
 
         return {"topic": "ERROR"}
