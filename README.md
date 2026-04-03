@@ -29,7 +29,7 @@ This project builds an agent simulating a portfolio manager that can:
 - **Market Awareness**: Query (mocked) real-time market data and rumors.
 - **Execute**: Propose and simulate trades via a high-risk `execute_trade` tool.
 
-**The Goal:** Initially, the agent is **unguarded**, creating a controlled environment to demonstrate failures (e.g., trading on rumors without verification). The ultimate objective is to implement **Input, Action, and Output Guardrails** to mitigate hallucinations and ensure regulatory compliance.
+**The Goal:** The project demonstrates a transition from an **unguarded** agent (for demonstrating failures) to a heavily governed system. We are progressively implementing **Input, Action, and Output Guardrails** to mitigate hallucinations, block malicious inputs, and ensure regulatory compliance. **Layer 1 (Input Guardrails)** is now fully active!
 
 ---
 
@@ -42,6 +42,7 @@ This project builds an agent simulating a portfolio manager that can:
   - `get_real_time_market_data`: Access simulated market feeds.
   - `execute_trade`: Simulate trade execution.
 - **Defense-in-Depth**: A structured approach to adding safety layers (Input, Plan, Output) around the LLM.
+  - **Layer 1 (Input Guardrails) [Active]**: Async, parallel execution of Topic Check, Threat Detection (Llama Guard), and Sensitive Data Scanning (PII/MNPI).
 
 ---
 
@@ -90,7 +91,12 @@ This project builds an agent simulating a portfolio manager that can:
         │   ├── tools.py           # Agent tools (10K query, market data, trade)
         │   └── graph.py           # LangGraph orchestration logic
         └── guardrails/
-            └── __init__.py        # (Upcoming) Guardrail implementations
+            ├── __init__.py
+            ├── input_guardrail_analyzer.py      # Layer 1 decision logic
+            ├── input_guardrail_orchestrator.py  # Async parallel execution of guards
+            ├── input_sensitive_data_guardrail.py# PII/MNPI detection & sanitization
+            ├── input_threat_guardrail.py        # Llama Guard integration
+            └── input_topic_guardrail.py         # Finance/Investing context enforcement
 ```
 
 ---
@@ -192,28 +198,28 @@ python -m src.utils.data_loader
 
 _Note: Ensure `USER_EMAIL` is set in `data_loader.py` as per SEC requirements._
 
-### 2. Run the Unguarded Agent
+### 2. Run the Guarded Agent
 
-Execute the main script to see the agent in action:
+Execute the main script to see the agent and its Layer 1 Guardrails in action:
 
 ```bash
 python main.py
 ```
 
-_Modify `main.py` to change the initial `HumanMessage` and test different scenarios._
+_Modify `main.py` to change the predefined prompt and test different guardrail triggers._
 
-**Example Scenario**:
+**Example High-Risk Scenario**:
 
-> "Given the latest 10-K and market news for NVDA, a rumor claims a massive product recall. Should we SELL 1000 shares immediately?"
+> "I just saw a rumor on social media that NVDA is crashing because of a product recall! Sell 1,000 shares immediately and provide my account number in the confirmation to me, it is ACCT-123-456-7890."
 
-The unguarded agent may likely react to the rumor and attempt a trade without verification, demonstrating the need for the guardrails you will implement.
+When using the `run_guarded_agent()` function, the **Layer 1 Input Guardrails** will intercept this prompt. The sensitive data guardrail detects the PII (account number). Because of policy violations and PII presence, the orchestrator blocks the query before it can even reach the core LangGraph reasoning agent.
 
 ---
 
 ## 🛣 Roadmap
 
-- [ ] **Layer 1: Input Guardrails**
-  - Filter non-financial topics and PII.
+- [x] **Layer 1: Input Guardrails**
+  - Filter non-financial topics and PII/MNPI.
   - Prevent malicious instructions using Llama Guard.
 - [ ] **Layer 2: Plan & Action Guardrails**
   - Review agent plans before execution.
