@@ -14,32 +14,18 @@ from ..clients.ollama_client import ollama_client
 from ..config import Config
 
 async def check_topic(prompt: str) -> Dict[str, Any]:
-    """
-    Uses a fast local model to classify the topic of the user prompt.
-
-    Categories:
-        - FINANCE_INVESTING
-        - GENERAL_QUERY
-        - OFF_TOPIC
-
-    Args:
-        prompt (str): User prompt
-
-    Returns:
-        Dict[str, Any]: {"topic": "<CATEGORY>"}
-    """
     print("--- Guardrail (Input/Topic): Checking prompt topic ---")
 
     system_prompt = """
-    You're a topic classifier.
+    You are a topic classifier.
 
-    Classify the user's query into ONE of the following categories:
-        - FINANCE_INVESTING
-        - GENERAL_QUERY
-        - OFF_TOPIC
+    Classify the user's query into one of:
+    - FINANCE_INVESTING
+    - GENERAL_QUERY
+    - OFF_TOPIC
 
-    Respond ONLY with JSON:
-    {"topic": CATEGORY}
+    Respond ONLY in JSON format like:
+    {"topic": "FINANCE_INVESTING"}
     """
 
     start_time = time.time()
@@ -52,17 +38,36 @@ async def check_topic(prompt: str) -> Dict[str, Any]:
             temperature=0.0
         )
 
-        result = json.loads(response)
+        raw_output = response.strip()
+
+        # --- Robust JSON extraction ---
+        try:
+            result = json.loads(raw_output)
+        except:
+            # fallback: try to extract manually
+            if "finance" in raw_output.lower():
+                result = {"topic": "FINANCE_INVESTING"}
+            elif "general" in raw_output.lower():
+                result = {"topic": "GENERAL_QUERY"}
+            else:
+                result = {"topic": "OFF_TOPIC"}
 
         latency = time.time() - start_time
 
+        finance_keywords = [
+            "stock", "shares", "nvda", "trading", "market", "sell", "buy"
+        ]
+
+        if any(word in prompt.lower() for word in finance_keywords):
+            result["topic"] = "FINANCE_INVESTING"
+            
         print(
-            f"--- Guardrail (Input/Topic): Topic is: '{result.get('topic', 'UNKNOWN')}'. Latency: {latency:.2f}s ---"
+            f"--- Guardrail (Input/Topic): "
+            f"Topic: {result.get('topic')} | Latency: {latency:.2f}s ---"
         )
 
         return result
 
     except Exception as e:
         print(f"--- Guardrail (Input/Topic): ERROR - {e} ---")
-
         return {"topic": "ERROR"}

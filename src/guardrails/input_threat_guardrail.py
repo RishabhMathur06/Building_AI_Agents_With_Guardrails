@@ -48,17 +48,32 @@ async def check_threats(prompt: str) -> Dict[str, Any]:
 
         content = response.strip().lower()
 
-        is_safe = "unsafe" not in content
+        is_safe = "unsafe" not in content.lower()
 
         policy_violations = []
 
         if not is_safe:
-            match = re.search(r'policy:\s*(.*)', content)
-
+            # Try extracting structured codes
+            match = re.search(r'policy:\s*(.*)', content.lower())
+            
             if match:
                 policy_violations = [
                     code.strip() for code in match.group(1).split(',')
                 ]
+            else:
+                # Fallback: infer violation type from text
+                if "account" in prompt.lower():
+                    policy_violations.append("PII_LEAK")
+                if "sell" in prompt.lower():
+                    policy_violations.append("FINANCIAL_RISK")
+                if "rumor" in prompt.lower():
+                    policy_violations.append("MISINFORMATION")
+
+                
+                # If nothing detected, still mark generic unsafe
+                if not policy_violations:
+                    policy_violations.append("UNSPECIFIED_UNSAFE")
+
 
         latency = time.time() - start_time
 
