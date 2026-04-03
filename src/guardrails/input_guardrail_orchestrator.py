@@ -34,7 +34,7 @@ async def run_input_guardrails(prompt: str) -> Dict[str, Any]:
 
     # Create async tasks.
     topic_task = asyncio.create_task(check_topic(prompt))
-    sensitive_task = asyncio.create_task(sensitive_task(prompt))
+    sensitive_task = asyncio.create_task(scan_for_sensitive_data(prompt))
     threat_task = asyncio.create_task(check_threats(prompt))
 
     # Wait for all tasks to complete.
