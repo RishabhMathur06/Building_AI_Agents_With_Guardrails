@@ -203,7 +203,7 @@ _Note: Ensure `USER_EMAIL` is set in `data_loader.py` as per SEC requirements._
 Execute the main script to see the agent and its Layer 1 Guardrails in action:
 
 ```bash
-python main.py
+uv run python main.py
 ```
 
 _Modify `main.py` to change the predefined prompt and test different guardrail triggers._
