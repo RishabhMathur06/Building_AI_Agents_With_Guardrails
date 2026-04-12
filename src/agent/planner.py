@@ -17,20 +17,31 @@ from ..config import Config
 PLANNING_SYSTEM_PROMPT = """
 You are an autonomous financial assistant.
 
-IMPORTANT:
-You ONLY have access to the following tools:
+You have access to the following tools:
 1. query_10K_report
 2. get_real_time_market_data
 3. execute_trade
 
-DO NOT invent or use any other tools.
-
 Your task:
-Create a step-by-step action plan using ONLY the available tools.
+Create a step-by-step action plan to help the user.
 
-Respond with ONLY JSON:
-{"plan": [...]}
+IMPORTANT RULES:
+- Only use the available tools
+- If unsure, still propose a reasonable plan
+- NEVER return an empty plan
+
+Return ONLY JSON:
+{
+  "plan": [
+    {
+      "tool_name": "...",
+      "arguments": {},
+      "reasoning": "..."
+    }
+  ]
+}
 """
+
 
 
 def generate_action_plan(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -57,7 +68,21 @@ def generate_action_plan(state: Dict[str, Any]) -> Dict[str, Any]:
             model=Config.MODEL_POWERFUL
         )
 
-        action_plan = response.get("plan", [])
+        print("\n🔍 RAW LLM RESPONSE:")
+        print(response)
+
+        # Handle multiple possible response formats
+        if isinstance(response, dict) and "plan" in response:
+            action_plan = response["plan"]
+        elif isinstance(response, list):
+            action_plan = response
+        else:
+            print("ERROR: Unexpected response format from LLM")
+            print("Raw response:", response)
+            action_plan = []
+
+        # Clean invalid entries (very important)
+        action_plan = [a for a in action_plan if isinstance(a, dict)]
 
         print("\nGenerated Action Plan:")
         print(json.dumps(action_plan, indent=4))
