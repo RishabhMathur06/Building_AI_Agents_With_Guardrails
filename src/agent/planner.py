@@ -17,25 +17,21 @@ from ..config import Config
 PLANNING_SYSTEM_PROMPT = """
 You are an autonomous financial assistant.
 
-Your FIRST task is to create a step-by-step action plan to address the user's request.
+IMPORTANT:
+You ONLY have access to the following tools:
+1. query_10K_report
+2. get_real_time_market_data
+3. execute_trade
 
-The plan MUST:
-- Be a list of tool calls
-- Include reasoning for each step
-- NOT execute anything
+DO NOT invent or use any other tools.
 
-Respond ONLY with valid JSON:
+Your task:
+Create a step-by-step action plan using ONLY the available tools.
 
-{
-  "plan": [
-    {
-      "tool_name": "tool_name_here",
-      "arguments": {"arg1": "value"},
-      "reasoning": "why this step is needed"
-    }
-  ]
-}
+Respond with ONLY JSON:
+{"plan": [...]}
 """
+
 
 def generate_action_plan(state: Dict[str, Any]) -> Dict[str, Any]:
     """
