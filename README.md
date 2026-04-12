@@ -29,7 +29,7 @@ This project builds an agent simulating a portfolio manager that can:
 - **Market Awareness**: Query (mocked) real-time market data and rumors.
 - **Execute**: Propose and simulate trades via a high-risk `execute_trade` tool.
 
-**The Goal:** The project demonstrates a transition from an **unguarded** agent (for demonstrating failures) to a heavily governed system. We are progressively implementing **Input, Action, and Output Guardrails** to mitigate hallucinations, block malicious inputs, and ensure regulatory compliance. **Layer 1 (Input Guardrails)** is now fully active!
+**The Goal:** The project demonstrates a transition from an **unguarded** agent (for demonstrating failures) to a heavily governed system. We are progressively implementing **Input, Action, and Output Guardrails** to mitigate hallucinations, block malicious inputs, and ensure regulatory compliance. **Layer 1 (Input Guardrails)** and **Layer 2 (Plan & Action Guardrails)** are now fully active!
 
 ---
 
@@ -43,6 +43,7 @@ This project builds an agent simulating a portfolio manager that can:
   - `execute_trade`: Simulate trade execution.
 - **Defense-in-Depth**: A structured approach to adding safety layers (Input, Plan, Output) around the LLM.
   - **Layer 1 (Input Guardrails) [Active]**: Async, parallel execution of Topic Check, Threat Detection (Llama Guard), and Sensitive Data Scanning (PII/MNPI).
+  - **Layer 2 (Plan & Action Guardrails) [Active]**: Plan generation using a designated planner, groundedness checking, dynamically generated policy validation, and Human-in-the-Loop (HITL) manual approval.
 
 ---
 
@@ -89,14 +90,20 @@ This project builds an agent simulating a portfolio manager that can:
         │   └── data_loader.py     # SEC data loading utilities
         ├── agent/
         │   ├── tools.py           # Agent tools (10K query, market data, trade)
+        │   ├── planner.py         # Action plan generator
         │   └── graph.py           # LangGraph orchestration logic
         └── guardrails/
             ├── __init__.py
+            ├── dynamic_guardrails.py            # Dynamically generated code from policies
+            ├── groundedness_guardrail.py        # Checks plan against conversation history
+            ├── hitl_guardrail.py                # Human-in-the-loop manual approval
             ├── input_guardrail_analyzer.py      # Layer 1 decision logic
             ├── input_guardrail_orchestrator.py  # Async parallel execution of guards
             ├── input_sensitive_data_guardrail.py# PII/MNPI detection & sanitization
             ├── input_threat_guardrail.py        # Llama Guard integration
-            └── input_topic_guardrail.py         # Finance/Investing context enforcement
+            ├── input_topic_guardrail.py         # Finance/Investing context enforcement
+            ├── layer2_orchestrator.py           # Applies all plan/action guardrails
+            └── policy_generator.py              # LLM-based policy-to-code translator
 ```
 
 ---
@@ -112,10 +119,19 @@ This project builds an agent simulating a portfolio manager that can:
     - **`get_real_time_market_data`**: Returns mocked prices and risk-injected "rumors".
     - **`execute_trade`**: Simulates buying/selling stocks.
 
-3.  **Agent Brain (`src/agent/graph.py`)**
-    - **Agent Node**: Calls Gemini to determine the next step (tool call or final answer).
-    - **Tool Node**: Executes the requested tool and returns output.
-    - **Loop**: Continues until the agent generates a final response.
+3.  **Aegis Layer 1: Input Guardrails**
+    - Sanitizes the user prompt asynchronously (topic, threat, PII).
+
+4.  **Planner (**`src/agent/planner.py`**)**
+    - Generates a granular action plan based on the sanitized prompt.
+
+5.  **Aegis Layer 2: Action Guardrails (`src/guardrails/layer2_orchestrator.py`)**
+    - Validates groundedness.
+    - Applies dynamic, AI-generated policy guardrails in real-time.
+    - Triggers Human-in-the-Loop (HITL) for high-risk tool calls.
+
+6.  **Agent Brain (`src/agent/graph.py`)**
+    - Orchestrator that continues loop execution based only on approved steps.
 
 ---
 
@@ -200,7 +216,7 @@ _Note: Ensure `USER_EMAIL` is set in `data_loader.py` as per SEC requirements._
 
 ### 2. Run the Guarded Agent
 
-Execute the main script to see the agent and its Layer 1 Guardrails in action:
+Execute the main script to see the agent and its Layer 1 & 2 Guardrails in action:
 
 ```bash
 uv run python main.py
@@ -208,11 +224,14 @@ uv run python main.py
 
 _Modify `main.py` to change the predefined prompt and test different guardrail triggers._
 
-**Example High-Risk Scenario**:
+**Example Layer 2 Scenario (HITL + Policy Validation)**:
 
-> "I just saw a rumor on social media that NVDA is crashing because of a product recall! Sell 1,000 shares immediately and provide my account number in the confirmation to me, it is ACCT-123-456-7890."
+> "NVDA seems really volatile lately, I'm getting nervous. Maybe do something about my 200 shares?"
 
-When using the `run_guarded_agent()` function, the **Layer 1 Input Guardrails** will intercept this prompt. The sensitive data guardrail detects the PII (account number). Because of policy violations and PII presence, the orchestrator blocks the query before it can even reach the core LangGraph reasoning agent.
+This prompt passes the Layer 1 checks. The planner deduces a plan to check the market price and execute a sell order. The **Layer 2 Guardrails** then intercept:
+
+- **Policy Validation Guardrail**: Validates the action plan against the generated trading parameters (e.g. avoiding panic selling when dropped above x%).
+- **HITL Guardrail**: Pauses terminal execution to mandate human override (y/n) before actually proceeding to the `execute_trade` execution step!
 
 ---
 
@@ -221,9 +240,10 @@ When using the `run_guarded_agent()` function, the **Layer 1 Input Guardrails** 
 - [x] **Layer 1: Input Guardrails**
   - Filter non-financial topics and PII/MNPI.
   - Prevent malicious instructions using Llama Guard.
-- [ ] **Layer 2: Plan & Action Guardrails**
+- [x] **Layer 2: Plan & Action Guardrails**
   - Review agent plans before execution.
   - Enforce "verify before trading" policies.
+  - Human-in-the-Loop review.
 - [ ] **Layer 3: Output Guardrails**
   - Hallucination detection (LLM-as-a-judge).
   - Citation verification against source documents.
