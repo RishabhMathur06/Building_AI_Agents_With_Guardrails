@@ -87,7 +87,6 @@ async def analyze_input_guardrail_results(prompt: str) -> Dict[str, Any]:
 
     return {
         "is_allowed": is_allowed,
-        "reasons": rejection_reasons,
-        "sanitized_prompt": sanitized_prompt,
+        "sanitized_prompt": results['sensitive_data_check']['redacted_prompt'],
         "raw_results": results
     }
