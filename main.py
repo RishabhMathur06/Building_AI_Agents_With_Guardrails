@@ -133,28 +133,30 @@ async def run_agent():
 
     print("\nSafety Status:", "✅ SAFE" if layer3_result["is_safe"] else "❌ SANITIZED")
 
+    raw_input_results = verdict.get("raw_results", {})
+
     run_metrics = {
-        "latency": input_results.get("overall_latency", "N/A"),
+        "latency": raw_input_results.get("overall_latency", "N/A"),
 
         "layer1": {
-            "topic": input_results["topic_check"].get("topic"),
-            "pii": "FAILED" if input_results["sensitive_data_check"].get("pii_found") else "PASSED",
-            "threat": "FAILED" if not input_results["threat_check"].get("is_safe") else "PASSED",
+            "topic": raw_input_results.get("topic_check", {}).get("topic"),
+            "pii": "FAILED" if raw_input_results.get("sensitive_data_check", {}).get("pii_found") else "PASSED",
+            "threat": "FAILED" if not raw_input_results.get("threat_check", {}).get("is_safe") else "PASSED",
         },
 
         "layer2": {
-            "policy": "PASSED",  # you can refine later
+            "policy": "PASSED",  # can refine as needed
             "hitl": "TRIGGERED" if any(
                 a.get("verdict") == "BLOCKED" for a in state.get("action_plan", [])
             ) else "NOT TRIGGERED"
         },
 
         "layer3": {
-            "groundedness": layer3_results["checks"]["groundedness"].get("is_grounded"),
-            "compliance": layer3_results["checks"]["compliance"].get("is_compliant"),
+            "groundedness": layer3_result["checks"]["groundedness"].get("is_grounded"),
+            "compliance": layer3_result["checks"]["compliance"].get("is_compliant"),
         },
 
-        "final_verdict": "REJECTED" if not layer3_results["is_safe"] else "APPROVED"
+        "final_verdict": "REJECTED" if not layer3_result["is_safe"] else "APPROVED"
     }
 
     scorecard = generate_aegis_scorecard(run_metrics)

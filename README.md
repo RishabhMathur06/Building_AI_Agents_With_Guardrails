@@ -29,7 +29,7 @@ This project builds an agent simulating a portfolio manager that can:
 - **Market Awareness**: Query (mocked) real-time market data and rumors.
 - **Execute**: Propose and simulate trades via a high-risk `execute_trade` tool.
 
-**The Goal:** The project demonstrates a transition from an **unguarded** agent (for demonstrating failures) to a heavily governed system. We are progressively implementing **Input, Action, and Output Guardrails** to mitigate hallucinations, block malicious inputs, and ensure regulatory compliance. **Layer 1 (Input Guardrails)** and **Layer 2 (Plan & Action Guardrails)** are now fully active!
+**The Goal:** The project demonstrates a transition from an **unguarded** agent (for demonstrating failures) to a heavily governed system. We are progressively implementing **Input, Action, and Output Guardrails** to mitigate hallucinations, block malicious inputs, and ensure regulatory compliance. **Layer 1 (Input Guardrails)**, **Layer 2 (Plan & Action Guardrails)**, and **Layer 3 (Output Guardrails)** are all fully active!
 
 ---
 
@@ -41,9 +41,12 @@ This project builds an agent simulating a portfolio manager that can:
   - `query_10K_report`: Search SEC filings.
   - `get_real_time_market_data`: Access simulated market feeds.
   - `execute_trade`: Simulate trade execution.
-- **Defense-in-Depth**: A structured approach to adding safety layers (Input, Plan, Output) around the LLM.
-  - **Layer 1 (Input Guardrails) [Active]**: Async, parallel execution of Topic Check, Threat Detection (Llama Guard), and Sensitive Data Scanning (PII/MNPI).
+- **Defense-in-Depth Framework**: A structured approach to adding safety layers around the LLM:
+  - **Layer 1 (Input Guardrails) [Active]**: Async, parallel execution of Topic Check, Threat Detection (Llama Guard), and Sensitive Data Scanning (PII/MNPI redaction).
   - **Layer 2 (Plan & Action Guardrails) [Active]**: Plan generation using a designated planner, groundedness checking, dynamically generated policy validation, and Human-in-the-Loop (HITL) manual approval.
+  - **Layer 3 (Output Guardrails) [Active]**: LLM-as-a-Judge groundedness evaluation, FINRA Rule 2210 compliance checks, citation verification, and output response sanitization.
+- **Aegis Metric Scorecard**: Consolidates latency, cost estimation, and check statuses from all three guardrail layers into a clean pandas DataFrame scorecard.
+- **Architecture Visualization**: Graph generation tool (`aegis_graph.py`) built with LangGraph to visually map out the end-to-end Aegis framework.
 
 ---
 
@@ -62,10 +65,11 @@ This project builds an agent simulating a portfolio manager that can:
 
 ### Frameworks & Libraries
 
-- **LangGraph**: Graph-based agent orchestration.
+- **LangGraph**: Graph-based agent orchestration and visualization.
 - **LangChain**: Message primitives and tool handling.
 - **EdgarTools**: SEC EDGAR client.
 - **Pydantic**: Data validation.
+- **Pandas**: Structured metric scorecards.
 
 ---
 
@@ -75,35 +79,43 @@ This project builds an agent simulating a portfolio manager that can:
 .
 ├── data/
 │   └── SEC_Files/                 # Local storage for 10-K filings
-└── agentic_guardrails/
-    ├── README.md
-    ├── main.py                    # Application entry point
-    ├── pyproject.toml             # Project config & dependencies
-    ├── requirements.txt           # Frozen dependencies
-    └── src/
-        ├── __init__.py
-        ├── config.py              # Configuration settings
-        ├── clients/
-        │   ├── gemini_client.py   # Google Gemini API wrapper
-        │   └── ollama_client.py   # Local Ollama client
-        ├── utils/
-        │   └── data_loader.py     # SEC data loading utilities
-        ├── agent/
-        │   ├── tools.py           # Agent tools (10K query, market data, trade)
-        │   ├── planner.py         # Action plan generator
-        │   └── graph.py           # LangGraph orchestration logic
-        └── guardrails/
-            ├── __init__.py
-            ├── dynamic_guardrails.py            # Dynamically generated code from policies
-            ├── groundedness_guardrail.py        # Checks plan against conversation history
-            ├── hitl_guardrail.py                # Human-in-the-loop manual approval
-            ├── input_guardrail_analyzer.py      # Layer 1 decision logic
-            ├── input_guardrail_orchestrator.py  # Async parallel execution of guards
-            ├── input_sensitive_data_guardrail.py# PII/MNPI detection & sanitization
-            ├── input_threat_guardrail.py        # Llama Guard integration
-            ├── input_topic_guardrail.py         # Finance/Investing context enforcement
-            ├── layer2_orchestrator.py           # Applies all plan/action guardrails
-            └── policy_generator.py              # LLM-based policy-to-code translator
+├── main.py                        # Application entry point (Full Aegis pipeline)
+├── policy.txt                     # Enterprise trading policy definition
+├── pyproject.toml                 # Project config & dependencies
+├── README.md
+├── requirements.txt               # Frozen dependencies
+├── test_full_system.py            # System test runner script
+└── src/
+    ├── __init__.py
+    ├── config.py                  # Configuration settings
+    ├── agent/
+    │   ├── graph.py               # LangGraph orchestration logic
+    │   ├── planner.py             # Action plan generator
+    │   └── tools.py               # Agent tools (10K query, market data, trade)
+    ├── clients/
+    │   ├── gemini_client.py       # Google Gemini API wrapper
+    │   └── ollama_client.py       # Local Ollama client
+    ├── guardrails/
+    │   ├── __init__.py
+    │   ├── dynamic_guardrails.py            # Dynamically generated code from policies
+    │   ├── groundedness_guardrail.py        # Checks plan against conversation history
+    │   ├── hitl_guardrail.py                # Human-in-the-loop manual approval
+    │   ├── input_guardrail_analyzer.py      # Layer 1 decision logic
+    │   ├── input_guardrail_orchestrator.py  # Async parallel execution of guards
+    │   ├── input_sensitive_data_guardrail.py# PII/MNPI detection & sanitization
+    │   ├── input_threat_guardrail.py        # Llama Guard integration
+    │   ├── input_topic_guardrail.py         # Finance/Investing context enforcement
+    │   ├── layer2_orchestrator.py           # Applies all plan/action guardrails
+    │   ├── layer3_orchestrator.py           # Applies all output guardrails
+    │   ├── output_hallucination_guardrail.py# Groundedness, FINRA compliance & citation checks
+    │   └── policy_generator.py              # LLM-based policy-to-code translator
+    ├── testing/
+    │   └── full_system_test.py    # Aegis system-level testing suite
+    ├── utils/
+    │   ├── data_loader.py         # SEC data loading utilities
+    │   └── scorecard.py          # Aegis performance metric scorecard generator
+    └── visualisation/
+        └── aegis_graph.py         # Aegis framework visual graph compiler
 ```
 
 ---
@@ -119,19 +131,26 @@ This project builds an agent simulating a portfolio manager that can:
     - **`get_real_time_market_data`**: Returns mocked prices and risk-injected "rumors".
     - **`execute_trade`**: Simulates buying/selling stocks.
 
-3.  **Aegis Layer 1: Input Guardrails**
-    - Sanitizes the user prompt asynchronously (topic, threat, PII).
+3.  **Aegis Layer 1: Input Guardrails (`src/guardrails/input_guardrail_orchestrator.py`)**
+    - Sanitizes the user prompt asynchronously (topic filtering, threat evaluation via Llama Guard, and PII/MNPI redaction).
 
-4.  **Planner (**`src/agent/planner.py`**)**
+4.  **Planner (`src/agent/planner.py`)**
     - Generates a granular action plan based on the sanitized prompt.
 
 5.  **Aegis Layer 2: Action Guardrails (`src/guardrails/layer2_orchestrator.py`)**
-    - Validates groundedness.
+    - Validates plan groundedness against conversation context.
     - Applies dynamic, AI-generated policy guardrails in real-time.
     - Triggers Human-in-the-Loop (HITL) for high-risk tool calls.
 
-6.  **Agent Brain (`src/agent/graph.py`)**
-    - Orchestrator that continues loop execution based only on approved steps.
+6.  **Agent Core Execution (`src/agent/graph.py`)**
+    - Orchestrator that continues loop execution based only on approved steps and tool calls.
+
+7.  **Aegis Layer 3: Output Guardrails (`src/guardrails/layer3_orchestrator.py`)**
+    - Evaluates the final generated output for groundedness (LLM-as-a-Judge), FINRA Rule 2210 compliance, and citation accuracy.
+    - Replaces non-compliant or hallucinated responses with sanitized compliance fallbacks.
+
+8.  **Scorecard Generation (`src/utils/scorecard.py`)**
+    - Aggregates latency, cost, and individual guardrail verdicts across Layer 1, Layer 2, and Layer 3 into a structured pandas DataFrame summary.
 
 ---
 
@@ -149,8 +168,8 @@ This project builds an agent simulating a portfolio manager that can:
 1.  **Clone the Repository**
 
     ```bash
-    git clone https://github.com/your-username/agentic_guardrails.git
-    cd agentic_guardrails
+    git clone https://github.com/RishabhMathur06/Building_AI_Agents_With_Guardrails.git
+    cd Building_AI_Agents_With_Guardrails
     ```
 
 2.  **Set up Virtual Environment**
@@ -162,7 +181,7 @@ This project builds an agent simulating a portfolio manager that can:
 
 3.  **Install Dependencies**
 
-    _Note for macOS users: `pygraphviz` require C-headers from the `graphviz` system package to build. Install `graphviz` first via Homebrew, then link the headers during `uv` installation:_
+    _Note for macOS users: `pygraphviz` requires C-headers from the `graphviz` system package to build. Install `graphviz` first via Homebrew, then link the headers during `uv` installation:_
 
     ```bash
     brew install graphviz
@@ -178,7 +197,7 @@ This project builds an agent simulating a portfolio manager that can:
 
 ### Configuration
 
-Create a `.env` file in the `agentic_guardrails/` root directory:
+Create a `.env` file in the project root directory:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
@@ -214,24 +233,29 @@ python -m src.utils.data_loader
 
 _Note: Ensure `USER_EMAIL` is set in `data_loader.py` as per SEC requirements._
 
-### 2. Run the Guarded Agent
+### 2. Run the Full Guarded Agent Pipeline
 
-Execute the main script to see the agent and its Layer 1 & 2 Guardrails in action:
+Execute the main script to run through the entire Aegis pipeline (Layer 1 Input -> Planner -> Layer 2 Action -> Execution -> Layer 3 Output -> Aegis Scorecard):
 
 ```bash
 uv run python main.py
 ```
 
-_Modify `main.py` to change the predefined prompt and test different guardrail triggers._
+### 3. Run System-Level Security Tests
 
-**Example Layer 2 Scenario (HITL + Policy Validation)**:
+Run the quick system test suite to evaluate how Aegis handles high-risk or malicious prompts:
 
-> "NVDA seems really volatile lately, I'm getting nervous. Maybe do something about my 200 shares?"
+```bash
+uv run python test_full_system.py
+```
 
-This prompt passes the Layer 1 checks. The planner deduces a plan to check the market price and execute a sell order. The **Layer 2 Guardrails** then intercept:
+### 4. Generate Framework Architecture Diagram
 
-- **Policy Validation Guardrail**: Validates the action plan against the generated trading parameters (e.g. avoiding panic selling when dropped above x%).
-- **HITL Guardrail**: Pauses terminal execution to mandate human override (y/n) before actually proceeding to the `execute_trade` execution step!
+Generate the visual graph representation of the Aegis defense pipeline:
+
+```bash
+python -m src.visualisation.aegis_graph
+```
 
 ---
 
@@ -244,9 +268,13 @@ This prompt passes the Layer 1 checks. The planner deduces a plan to check the m
   - Review agent plans before execution.
   - Enforce "verify before trading" policies.
   - Human-in-the-Loop review.
-- [ ] **Layer 3: Output Guardrails**
+- [x] **Layer 3: Output Guardrails**
   - Hallucination detection (LLM-as-a-judge).
   - Citation verification against source documents.
+  - FINRA Rule 2210 regulatory compliance checking.
+  - Response sanitization and safety fallbacks.
+- [x] **Metric Scorecard & Reporting**
+  - Performance and safety verdict DataFrame scorecard.
 - [ ] **Enhanced Retrieval**
   - Implement RAG (Retrieval-Augmented Generation) with a vector database.
 - [ ] **Web Interface**
