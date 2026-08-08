@@ -17,3 +17,5 @@ wheels/
 
 # uv related files
 uv.lock
+
+policy.txt
